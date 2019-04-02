@@ -9,7 +9,7 @@ import (
 
 func main() {
 	i := flag.Int("i", 256, "sha")
-	s := flag.String("s", "hgoe", "str")
+	s := flag.String("s", "hoge", "str")
 	flag.Parse()
 
 	switch *i {
