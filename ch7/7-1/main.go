@@ -27,6 +27,19 @@ func (c *WordCounter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// LineCounter 型
+type LineCounter int
+
+func (c *LineCounter) Write(p []byte) (int, error) {
+	reader := bytes.NewReader(p)
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		*c++
+	}
+	return len(p), nil
+}
+
 func main() {
 	var c ByteCounter
 	c.Write([]byte("hello"))
@@ -39,5 +52,9 @@ func main() {
 
 	var w WordCounter
 	w.Write([]byte("hello kentana"))
-	fmt.Println(w)
+	fmt.Println(w) // 2
+
+	var l LineCounter
+	l.Write([]byte("1\n2\n3\n4\n5"))
+	fmt.Println(l) // 5
 }
