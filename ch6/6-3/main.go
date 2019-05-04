@@ -23,4 +23,9 @@ func main() {
 	z.AddAll(4, 6)
 	x.DifferenceWith(&z)
 	fmt.Printf("DifferenceWith: %s\n", x.String()) // 2
+
+	x.Clear()
+	x.AddAll(1, 3, 5, 6)
+	x.SymmetricDifference(&y)
+	fmt.Printf("SymmetricDifference: %s\n", x.String()) // 1, 2, 3, 4, 5 (6は除かれる)
 }
