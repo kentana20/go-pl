@@ -25,6 +25,13 @@ func (s *IntSet) Add(x int) {
 	s.words[word] |= 1 << bit
 }
 
+// AddAll - 値のリストを追加する
+func (s *IntSet) AddAll(list ...int) {
+	for _, val := range list {
+		s.Add(val)
+	}
+}
+
 // UnionWith - sとtの和集合をsに設定する
 func (s *IntSet) UnionWith(t *IntSet) {
 	for i, tword := range t.words {
