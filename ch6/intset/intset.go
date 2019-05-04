@@ -1,4 +1,4 @@
-package main
+package intset
 
 import (
 	"bytes"
@@ -57,15 +57,35 @@ func (s *IntSet) String() string {
 	return buf.String()
 }
 
-func main() {
-	var x, y IntSet
-	// Add
-	x.Add(1)
-	x.Add(144)
-	x.Add(9)
-	fmt.Println(x.String())
+// Len - 要素数を返す
+func (s *IntSet) Len() int {
+	count := 0
+	for _, word := range s.words {
+		for word != 0 {
+			count++
+			word &= word - 1
+		}
+	}
+	return count
+}
 
-	y.Add(9)
-	y.Add(42)
-	fmt.Println(y.String())
+// Remove - セットから x を取り除く
+func (s *IntSet) Remove(x int) {
+	word, bit := x/64, uint(x%64)
+	for word >= len(s.words) {
+		return
+	}
+	s.words[word] &= ^(1 << bit)
+}
+
+// Clear - セットから全て尾の要素を取り除きます
+func (s *IntSet) Clear() {
+	s.words = []uint64{}
+}
+
+// Copy - セットのコピーを返します
+func (s *IntSet) Copy() *IntSet {
+	var c IntSet
+	c.words = append(c.words, s.words...)
+	return &c
 }
