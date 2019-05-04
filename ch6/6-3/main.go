@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	var x, y intset.IntSet
+	var x, y, z intset.IntSet
 	x.AddAll(1, 3, 5)
 	fmt.Println(x.String())
 
@@ -15,8 +15,12 @@ func main() {
 	fmt.Println(y.String())
 
 	x.UnionWith(&y)
-	fmt.Printf("UnionWith: %s\n", x.String())
+	fmt.Printf("UnionWith: %s\n", x.String()) // 1, 2, 3, 4, 5, 6
 
 	x.IntersectWith(&y)
-	fmt.Printf("IntersectWith: %s\n", x.String())
+	fmt.Printf("IntersectWith: %s\n", x.String()) // 2, 4, 6
+
+	z.AddAll(4, 6)
+	x.DifferenceWith(&z)
+	fmt.Printf("DifferenceWith: %s\n", x.String()) // 2
 }

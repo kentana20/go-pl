@@ -53,6 +53,16 @@ func (s *IntSet) IntersectWith(t *IntSet) {
 	}
 }
 
+// DifferenceWith - sとtの差集合をsに設定する
+func (s *IntSet) DifferenceWith(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			// ビット演算 ビットクリア &^
+			s.words[i] &^= tword
+		}
+	}
+}
+
 // String
 func (s *IntSet) String() string {
 	var buf bytes.Buffer
