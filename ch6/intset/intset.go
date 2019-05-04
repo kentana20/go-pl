@@ -1,4 +1,4 @@
-package main
+package intset
 
 import (
 	"bytes"
@@ -25,6 +25,13 @@ func (s *IntSet) Add(x int) {
 	s.words[word] |= 1 << bit
 }
 
+// AddAll - 値のリストを追加する
+func (s *IntSet) AddAll(list ...int) {
+	for _, val := range list {
+		s.Add(val)
+	}
+}
+
 // UnionWith - sとtの和集合をsに設定する
 func (s *IntSet) UnionWith(t *IntSet) {
 	for i, tword := range t.words {
@@ -32,6 +39,36 @@ func (s *IntSet) UnionWith(t *IntSet) {
 			s.words[i] |= tword
 		} else {
 			s.words = append(s.words, tword)
+		}
+	}
+}
+
+// IntersectWith - sとtの積集合をsに設定する
+func (s *IntSet) IntersectWith(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			// ビット演算 and
+			s.words[i] &= tword
+		}
+	}
+}
+
+// DifferenceWith - sとtの差集合をsに設定する
+func (s *IntSet) DifferenceWith(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			// ビット演算 ビットクリア &^
+			s.words[i] &^= tword
+		}
+	}
+}
+
+// SymmetricDifference - sとtの対称差をsに設定する
+func (s *IntSet) SymmetricDifference(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			// ビット演算 xor
+			s.words[i] ^= tword
 		}
 	}
 }
@@ -57,15 +94,35 @@ func (s *IntSet) String() string {
 	return buf.String()
 }
 
-func main() {
-	var x, y IntSet
-	// Add
-	x.Add(1)
-	x.Add(144)
-	x.Add(9)
-	fmt.Println(x.String())
+// Len - 要素数を返す
+func (s *IntSet) Len() int {
+	count := 0
+	for _, word := range s.words {
+		for word != 0 {
+			count++
+			word &= word - 1
+		}
+	}
+	return count
+}
 
-	y.Add(9)
-	y.Add(42)
-	fmt.Println(y.String())
+// Remove - セットから x を取り除く
+func (s *IntSet) Remove(x int) {
+	word, bit := x/64, uint(x%64)
+	for word >= len(s.words) {
+		return
+	}
+	s.words[word] &= ^(1 << bit)
+}
+
+// Clear - セットから全て尾の要素を取り除きます
+func (s *IntSet) Clear() {
+	s.words = []uint64{}
+}
+
+// Copy - セットのコピーを返します
+func (s *IntSet) Copy() *IntSet {
+	var c IntSet
+	c.words = append(c.words, s.words...)
+	return &c
 }
