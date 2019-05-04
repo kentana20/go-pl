@@ -43,6 +43,16 @@ func (s *IntSet) UnionWith(t *IntSet) {
 	}
 }
 
+// IntersectWith - sとtの積集合をsに設定する
+func (s *IntSet) IntersectWith(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			// ビット演算 and
+			s.words[i] &= tword
+		}
+	}
+}
+
 // String
 func (s *IntSet) String() string {
 	var buf bytes.Buffer
