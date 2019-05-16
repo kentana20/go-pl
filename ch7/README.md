@@ -100,7 +100,7 @@ type ReadWriteCloser interface {
 
 ある具象型が特定のインタフェースを満足しているという意味でその具象型がそのインタフェースであると表現することが多い。
 
-- ex. *bytes.Buffer は io.Writer / *os.File は io.ReadWriter
+- ex. *bytes.Buffer は io.Writer / *os.File は io.ReadWriter である
 
 その型がインタフェースを満足していれば、そのインタフェースへ代入できる。
 
@@ -269,3 +269,67 @@ func CelsiusFlag(name string, value Celsius, usage string) *Celsius {
 
 `flag.CommandLine.Var` でグローバル変数である flag.CommandLine にフラグを追加できる。
 
+# 7-5 - インタフェース値
+
+インタフェースは
+
+- 動的な型（dynamic type）
+- 動的な値（dynamic value）
+
+の2つの構成要素を持っている。Goは静的型付言語なので、型はコンパイル時に解釈され、値ではない。
+
+```go
+var w io.Writer
+w = os.Stdout
+w = new(bytes.Buffer)
+w = nil
+```
+
+はじめの宣言時は type, value ともに nilが入る（nilインタフェース値）。メソッド呼び出しするとnil参照エラー。
+
+```go
+w.Write([]byte("hello")) // panic
+```
+
+2つめで*os.Fileの値を代入している。具象型からインタフェース型へ暗黙的に変換している。動的な型は *os.File (ポインタ型)で動的な値はos.Fileへの参照となる。
+
+```go
+w.Write([]byte("hello")) // "hello"
+```
+
+3つめで*bytes.Bufferの値をインタフェース値に代入している。動的な型は *bytes.Bufferで動的な値は bytes.Buffer への参照。
+
+```go
+w.Write([]byte("hello")) // bytes.Buffer へ "hello" を書き出す
+```
+
+4つめでnilを代入してDynamic Type, Dynamic Valueともにnilにしている。
+
+---
+
+```go
+var x interface {} = []int{1, 2, 3}
+fmt.Println(x == x)
+```
+
+インタフェース値は `==` , `!=` で比較できるが、型が比較可能でない場合はpanicになる。こわい。
+
+# 7-6 - sort.Interface でのソート
+
+ソートをするためには
+
+- 列の長さ
+- 要素比較の方法
+- 要素を入れ替える方法
+
+が必要。これがそのままインタフェースになる。
+
+```go
+package sort
+
+type Interface interface {
+    Len()
+    Less(i, j int) bool
+    Swap(i, j int)
+}
+```
