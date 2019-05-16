@@ -49,6 +49,223 @@ func (c *ByteCounter) Write(p []byte) (int, error) {
 
 ByteCounter型にWriteメソッドを定義している → Fprintfへ渡せる。
 
+# 7.2 - インタフェース型
 
+インタフェース型は具象型がそのインタフェースのインスタンスとしてみなされるために持たなければならないメソッドの集まりを定義する。
+既存の型の組み合わせで新たなインタフェース型を宣言することもできる（インタフェースの埋め込み）。
 
-# 7.2 - インタフェース
+```go
+package io
+
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+type Closer interface {
+    Close() error
+}
+
+// 埋め込みを使ったインタフェース定義
+type ReadWriter interface {
+    Reader
+    Writer
+}
+
+// ↑と一緒
+type ReadWriter interface {
+    Read(p []byte) (n int, err error)
+    Write(p []byte) (n int, err error)
+}
+
+type ReadWriteCloser interface {
+    Reader
+    Writer
+    Closer
+}
+```
+ 
+ # 7-3 - インタフェースを満足する
+
+インタフェースが要求しているすべてのメソッドを型が保持していれば、その方はインタフェースを満足する。
+
+- ex. *os.File は以下を満足する
+  - io.Reader
+  - io.Writer
+  - io.Closer
+  - io.ReadWriter
+
+ある具象型が特定のインタフェースを満足しているという意味でその具象型がそのインタフェースであると表現することが多い。
+
+- ex. *bytes.Buffer は io.Writer / *os.File は io.ReadWriter
+
+その型がインタフェースを満足していれば、そのインタフェースへ代入できる。
+
+```go
+var w io.Writer
+w = os.Stdout
+w = new(bytes.Buffer)
+w = time.Second // コンパイルエラー
+```
+
+インタフェースは具象型とその型が保持する値を包んで隠すので、インタフェース型が公開しているメソッドしか呼び出せない。
+
+```go
+os.Stdout.Write([]byte("hello"))
+os.Stdout.Close()
+
+var w io.Writer
+w = os.Stdout
+w.Write([]byte("hello"))
+w.Close() // コンパイルエラー（io.WriterインタフェースにCloseメソッドがないため）
+```
+
+空インタフェース型はそれを満足する方に対して何も要求していないため、すべての値を空インタフェースへ代入できる。
+
+```go
+var any interface{}
+any = true
+any = 123
+any = "hello"
+any = map[string]int{"one": 1}
+any = new(bytes.Buffer)
+```
+
+具象型は関連のない多くのインタフェースを満足できる。
+
+- ex. デジタルコンテンツを体系化するプログラム
+
+```go
+// Album, Book, Movie, Magazine, Podcast, TVEpisode, Track
+
+type Artifact interface {
+    Title() string
+    Creators() []string
+    Created() time.Time
+}
+
+type Text interface {
+    Pages() int
+    Words() int
+    PageSize() int
+}
+
+type Audio interface {
+    Stream() (io.ReadCloser, error)
+    RunningTime() time.Duration
+    Format() string
+}
+
+type Video interface {
+    Stream() (io.ReadCloser, error)
+    RunningTime() time.Duration
+    Format() string
+    Resolution() (x, y int)
+}
+
+type Streamer interface {
+    Stream() (io.ReadCloser, error)
+    RunningTime() time.Duration
+    Format() string
+}
+
+type Audio interface {
+    Streamer
+}
+
+type Video interface {
+    Streamer
+    Resolution() (x, y int)
+}
+```
+
+ # 7-4 - flag.Value によるフラグの解析
+
+指定された期間だけスリープするプログラム
+
+```go
+// デフォルトは1sec
+var period = flag.Duration("period", 1*time.Second, "sleep period")
+
+func main() {
+	flag.Parse()
+	fmt.Printf("Sleeping for %v...", *period)
+	time.Sleep(*period)
+	fmt.Println()
+}
+```
+
+`flag.Duration` 関数は `time.Duration` 型のフラグ変数を生成する → ユーザが使いやすい形式で期間を指定可能になる。
+
+```go
+package flag
+
+type Value interface {
+    String() string
+    Set(string) error
+}
+```
+
+ flag.Value インタフェースを満足する型でフラグ表記を定義することもできる。
+
+ ---
+
+ 気温を摂氏、華氏で指定することができるcelsiusFlag型を定義してみる。
+
+ ```go
+ package tempconv
+
+import (
+	"flag"
+	"fmt"
+)
+
+type Celsius float64
+type Fahrenheit float64
+
+// celsiusFlag型
+type celsiusFlag struct{ Celsius }
+
+const (
+	AbsoluteZeroC Celsius = -273.15
+	FreezingC     Celsius = 0
+	BoilingC      Celsius = 100
+)
+
+func (c Celsius) String() string {
+	return fmt.Sprintf("%g ℃", c)
+}
+
+// FToC 華氏 → 摂氏
+func FToC(f Fahrenheit) Celsius {
+	return Celsius((f - 32) * 5 / 9)
+}
+
+// celsiusFlag型に対するSetメソッド
+func (f *celsiusFlag) Set(s string) error {
+	var unit string
+	var value float64
+	fmt.Sscanf(s, "%f%s", &value, &unit) // no error check needed
+	switch unit {
+	case "C", "°C":
+		f.Celsius = Celsius(value)
+		return nil
+	case "F", "°F":
+		f.Celsius = FToC(Fahrenheit(value))
+		return nil
+	}
+	return fmt.Errorf("invalid temperature %q", s)
+}
+
+func CelsiusFlag(name string, value Celsius, usage string) *Celsius {
+	f := celsiusFlag{value}
+	flag.CommandLine.Var(&f, name, usage)
+	return &f.Celsius
+}
+```
+
+`flag.CommandLine.Var` でグローバル変数である flag.CommandLine にフラグを追加できる。
+
